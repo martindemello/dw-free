@@ -27,7 +27,8 @@ use DW::API::Method;
 use DW::API::Key;
 use JSON;
 use YAML::XS qw'LoadFile';
-use JSON::Validator 'validate_json';
+use JSON::Validator;
+use JSON::Validator::Schema::Draft7;
 use Hash::MultiValue;
 
 use Carp qw/ croak /;
@@ -318,11 +319,13 @@ sub schema {
     if ( defined $self->{schema} ) {
 
         # Make sure we've been provided a valid schema to validate against
-        my @errors = validate_json( $self->{schema}, 'http://json-schema.org/draft-07/schema#' );
+        my $jv = JSON::Validator::Schema::Draft7->new;
+        my @errors = $jv->validate($self->{schema});
         croak "Invalid schema! Errors: @errors" if @errors;
 
         # make a validator against the schema
-        my $validator = JSON::Validator->new->schema( $self->{schema} );
+        my $validator = JSON::Validator->new;
+        $validator->schema( $self->{schema} );
 
         # turn on coercion for params, because perl doesn't care about scalar types but JSON does
         # so we're more flexible on input than output
